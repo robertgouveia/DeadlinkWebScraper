@@ -8,62 +8,52 @@ import (
 	"golang.org/x/net/html"
 )
 
-func main() {
-	links := make(map[string]bool)
-
-	url := "https://scrape-me.dreamsofcode.io/"
+func scrapeURL(url string, list map[string]bool) {
+	fmt.Println("Scraping", url)
 	response, err := http.Get(url)
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
+		return
 	}
 	defer response.Body.Close()
 
 	doc, err := html.Parse(response.Body)
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
+		return
 	}
 
-	var f func(*html.Node)
-	f = func(n *html.Node) {
-		if n.Type == html.ElementNode && n.Data == "a" {
-			for _, attr := range n.Attr {
-				if attr.Key == "href" {
-					if strings.HasPrefix(attr.Val, "/") != true {
-						fmt.Printf("Skipping %s\n", attr.Val)
-						continue
-					}
+	findAnchors(doc, list)
+}
 
-					links[attr.Val] = false
-				}
+func findAnchors(n *html.Node, list map[string]bool) {
+	if n.Type == html.ElementNode && n.Data == "a" {
+		for _, attr := range n.Attr {
+			if attr.Key == "href" && strings.HasPrefix(attr.Val, "/") {
+				list[strings.TrimPrefix(attr.Val, "/")] = false
+				continue
 			}
 		}
-		for c := n.FirstChild; c != nil; c = c.NextSibling {
-			f(c)
-		}
+	}
+	for c := n.FirstChild; c != nil; c = c.NextSibling {
+		findAnchors(c, list)
+	}
+}
+
+func main() {
+	links := make(map[string]bool)
+
+	scrapeURL("https://scrape-me.dreamsofcode.io/", links)
+	for link := range links {
+		scrapeURL("https://scrape-me.dreamsofcode.io/"+link, links)
 	}
 
-	f(doc)
-
-	for k := range links {
-
-		response, err := http.Get(url + k)
-		if err != nil {
-			fmt.Println(err)
-			continue
-		}
-		defer response.Body.Close()
-
-		doc, err := html.Parse(response.Body)
-		if err != nil {
-			fmt.Println(err)
-			continue
-		}
-
-		f(doc)
-		links[k] = true
+	for link := range links {
+		fmt.Println(link)
 	}
 
-	for k, v := range links {
-		fmt.Printf("%s: %t\n", k, v)
-	}
+	// Send a link
+	// scrape the link
+	// send sub links
+	// repeat
 }
