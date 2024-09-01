@@ -9,7 +9,7 @@ import (
 	"golang.org/x/net/html"
 )
 
-func scrape(baseURL string, url string, deadLinks []string, links map[string]bool, mux *sync.Mutex, wg *sync.WaitGroup) {
+func scrape(baseURL string, url string, deadLinks *[]string, links map[string]bool, mux *sync.Mutex, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	// this function will initiate the scraping of a url by parsing the body of the url
@@ -28,8 +28,8 @@ func scrape(baseURL string, url string, deadLinks []string, links map[string]boo
 
 	if response.StatusCode != 200 {
 		// if the url does not exist
-		fmt.Println("Dead link", fullURL)
-		deadLinks = append(deadLinks, fullURL)
+		fmt.Println("Dead link", url)
+		*deadLinks = append(*deadLinks, url)
 	}
 
 	doc, err := html.Parse(response.Body)
@@ -123,19 +123,19 @@ func main() {
 	// this means that there is one goroutine running
 
 	// scrape the initial base url with a / path
-	go scrape(baseURL, initialPath, deadLinks, links, &mux, &wg)
+	go scrape(baseURL, initialPath, &deadLinks, links, &mux, &wg)
 
 	wg.Wait() // wait for all goroutines to finish
 
-	for link := range links {
-		//print all links that have been scraped
+	//for link := range links {
+	//print all links that have been scraped
 
-		if links[link] {
-			fmt.Println(link)
-		}
-	}
+	//	if links[link] {
+	//		fmt.Println(link)
+	//	}
+	//}
 
-	for deadLinks := range deadLinks {
+	for _, deadLinks := range deadLinks {
 		// print all links that are dead
 		fmt.Println(deadLinks)
 	}
