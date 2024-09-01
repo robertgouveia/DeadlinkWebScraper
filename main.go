@@ -28,6 +28,7 @@ func scrape(baseURL string, url string, deadLinks []string, links map[string]boo
 
 	if response.StatusCode != 200 {
 		// if the url does not exist
+		fmt.Println("Dead link", fullURL)
 		deadLinks = append(deadLinks, fullURL)
 	}
 
